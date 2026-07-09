@@ -3,7 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AWS Global Infrastructure Explorer</title>
+    <title>AWS Global Infrastructure</title>
+    <meta name="description" content="Interactive 3D globe of AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones and Direct Connect sites." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AWS Global Infrastructure" />
+    <meta property="og:description" content="Interactive 3D globe of AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones and Direct Connect sites." />
+    <meta property="og:url" content="https://venkateshk111.github.io/aws-global-infrastructure/" />
+    <meta property="og:image" content="https://venkateshk111.github.io/aws-global-infrastructure/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AWS Global Infrastructure" />
+    <meta name="twitter:description" content="Interactive 3D globe of AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones and Direct Connect sites." />
+    <meta name="twitter:image" content="https://venkateshk111.github.io/aws-global-infrastructure/og-image.png" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -11,10 +23,11 @@
       <canvas id="globe"></canvas>
 
       <header id="topbar">
-        <div class="logo"><span class="logo-aws">AWS</span> Global Infrastructure Explorer</div>
+        <div class="logo"><span class="logo-aws">AWS</span> Global Infrastructure</div>
         <div id="stats"></div>
       </header>
 
+      <button id="controls-toggle" aria-label="Toggle layers panel">⚙ Layers</button>
       <aside id="controls">
         <h3>Layers</h3>
         <label><input type="checkbox" data-layer="regions" checked><span class="dot" style="--c:#ff9900"></span>Regions</label>

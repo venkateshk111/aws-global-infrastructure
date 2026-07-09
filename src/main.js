@@ -324,6 +324,11 @@ document.getElementById('sim').addEventListener('change', (e) => {
 });
 simPulses.pts.visible = false;
 
+// mobile: layers panel collapses into a toggleable drawer
+document.getElementById('controls-toggle').addEventListener('click', () => {
+  document.getElementById('controls').classList.toggle('open');
+});
+
 // ---------- layer toggles ----------
 document.querySelectorAll('#controls input[data-layer]').forEach((cb) => {
   cb.addEventListener('change', () => {
