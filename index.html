@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AWS Global Infrastructure Explorer</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="globe"></canvas>
+
+      <header id="topbar">
+        <div class="logo"><span class="logo-aws">AWS</span> Global Infrastructure Explorer</div>
+        <div id="stats"></div>
+      </header>
+
+      <aside id="controls">
+        <h3>Layers</h3>
+        <label><input type="checkbox" data-layer="regions" checked><span class="dot" style="--c:#ff9900"></span>Regions</label>
+        <label><input type="checkbox" data-layer="azs" checked><span class="dot" style="--c:#ffd280"></span>Availability Zones</label>
+        <label><input type="checkbox" data-layer="edge" checked><span class="dot" style="--c:#00d1ff"></span>Edge Locations</label>
+        <label><input type="checkbox" data-layer="localzones" checked><span class="dot" style="--c:#7fff9e"></span>Local Zones</label>
+        <label><input type="checkbox" data-layer="wavelength" checked><span class="dot" style="--c:#c77dff"></span>Wavelength Zones</label>
+        <label><input type="checkbox" data-layer="directconnect" checked><span class="dot" style="--c:#ff5d8f"></span>Direct Connect</label>
+        <label><input type="checkbox" data-layer="backbone" checked><span class="dot" style="--c:#4d7fff"></span>Backbone Network</label>
+        <h3>Traffic Simulation</h3>
+        <select id="sim">
+          <option value="off">Off</option>
+          <option value="cloudfront">CloudFront delivery</option>
+          <option value="s3crr">S3 Cross-Region Replication</option>
+          <option value="dx">Direct Connect ingress</option>
+          <option value="multiregion">Multi-region app</option>
+        </select>
+      </aside>
+
+      <div id="tooltip" hidden></div>
+
+      <aside id="panel" hidden>
+        <button id="panel-close">×</button>
+        <div id="panel-body"></div>
+      </aside>
+
+      <div id="watermark">Built by Venkatesh for educational purposes · Not affiliated with AWS</div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
