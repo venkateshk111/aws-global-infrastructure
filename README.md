@@ -12,6 +12,12 @@
 
 ---
 
+## 🖼️ Preview
+
+![AWS Global Infrastructure](public/screenshot-home.png)
+
+---
+
 ## 📖 About
 
 AWS Global Infrastructure can be difficult to understand through documentation alone. This project provides an **interactive 3D visualization** that helps learners explore how AWS builds its global cloud platform.
@@ -62,12 +68,6 @@ It is intended to complement the official AWS documentation and provide an easie
 
 ---
 
-## 🖼️ Screenshots
-
-> ![AWS Global Infrastructure](public/screenshot-home.png)
-
----
-
 ## 📚 Learn More
 
 Official AWS documentation:
@@ -101,3 +101,7 @@ This project is an independent educational initiative created by **Venkatesh K**
 It is **not affiliated with, endorsed by, sponsored by, or maintained by Amazon Web Services (AWS) or Amazon.com, Inc.**
 
 AWS and related trademarks are the property of Amazon.com, Inc. or its affiliates.
+
+## License
+
+MIT — see [LICENSE](LICENSE) for details.
