@@ -1,6 +1,13 @@
-// Real AWS global infrastructure data, compiled from AWS public documentation
-// (aws.amazon.com/about-aws/global-infrastructure), current as of mid-2026.
-// Edge locations are a representative subset of the 600+ CloudFront PoPs (one per metro).
+// Real AWS global infrastructure data.
+// SOURCE OF TRUTH: https://aws.amazon.com/about-aws/global-infrastructure/
+// (re-check that page to refresh these figures when AWS updates them).
+// Last synced 2026-07-10, when the page published: 39 launched Regions, 123 Availability
+// Zones, 45 Local Zones, 33 Wavelength Zones, 750+ CloudFront POPs and 15 regional edge
+// caches, with 2 more Regions (Saudi Arabia, Chile) and 7 more AZs announced.
+// Region/AZ detail: https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-regions.html
+// Local Zones:      https://docs.aws.amazon.com/local-zones/latest/ug/available-local-zones.html
+// Wavelength Zones: https://aws.amazon.com/wavelength/locations/
+// Edge locations are a representative subset of the 750+ CloudFront POPs (one per metro).
 
 export const REGIONS = [
   { code: 'us-east-1', name: 'N. Virginia', city: 'Ashburn', country: 'United States', lat: 38.95, lng: -77.45, azs: 6, launched: 2006, geo: 'Americas' },
@@ -18,6 +25,7 @@ export const REGIONS = [
   { code: 'eu-west-3', name: 'Europe (Paris)', city: 'Paris', country: 'France', lat: 48.86, lng: 2.35, azs: 3, launched: 2017, geo: 'Europe' },
   { code: 'eu-central-1', name: 'Europe (Frankfurt)', city: 'Frankfurt', country: 'Germany', lat: 50.11, lng: 8.68, azs: 3, launched: 2014, geo: 'Europe' },
   { code: 'eu-central-2', name: 'Europe (Zurich)', city: 'Zurich', country: 'Switzerland', lat: 47.37, lng: 8.54, azs: 3, launched: 2022, geo: 'Europe' },
+  { code: 'eusc-de-east-1', name: 'European Sovereign Cloud (Brandenburg)', city: 'Brandenburg', country: 'Germany', lat: 52.4, lng: 13.05, azs: 3, launched: 2025, geo: 'Europe', sovereign: true },
   { code: 'eu-north-1', name: 'Europe (Stockholm)', city: 'Stockholm', country: 'Sweden', lat: 59.33, lng: 18.06, azs: 3, launched: 2018, geo: 'Europe' },
   { code: 'eu-south-1', name: 'Europe (Milan)', city: 'Milan', country: 'Italy', lat: 45.46, lng: 9.19, azs: 3, launched: 2020, geo: 'Europe' },
   { code: 'eu-south-2', name: 'Europe (Spain)', city: 'Zaragoza (Aragón)', country: 'Spain', lat: 41.65, lng: -0.88, azs: 3, launched: 2022, geo: 'Europe' },
@@ -34,6 +42,7 @@ export const REGIONS = [
   { code: 'ap-southeast-3', name: 'Asia Pacific (Jakarta)', city: 'Jakarta', country: 'Indonesia', lat: -6.21, lng: 106.85, azs: 3, launched: 2021, geo: 'Asia Pacific' },
   { code: 'ap-southeast-4', name: 'Asia Pacific (Melbourne)', city: 'Melbourne', country: 'Australia', lat: -37.81, lng: 144.96, azs: 3, launched: 2023, geo: 'Asia Pacific' },
   { code: 'ap-southeast-5', name: 'Asia Pacific (Malaysia)', city: 'Kuala Lumpur', country: 'Malaysia', lat: 3.14, lng: 101.69, azs: 3, launched: 2024, geo: 'Asia Pacific' },
+  { code: 'ap-southeast-6', name: 'Asia Pacific (New Zealand)', city: 'Auckland', country: 'New Zealand', lat: -36.85, lng: 174.76, azs: 3, launched: 2025, geo: 'Asia Pacific' },
   { code: 'ap-southeast-7', name: 'Asia Pacific (Thailand)', city: 'Bangkok', country: 'Thailand', lat: 13.76, lng: 100.5, azs: 3, launched: 2025, geo: 'Asia Pacific' },
   { code: 'ap-northeast-1', name: 'Asia Pacific (Tokyo)', city: 'Tokyo', country: 'Japan', lat: 35.68, lng: 139.69, azs: 4, launched: 2011, geo: 'Asia Pacific' },
   { code: 'ap-northeast-2', name: 'Asia Pacific (Seoul)', city: 'Seoul', country: 'South Korea', lat: 37.57, lng: 126.98, azs: 4, launched: 2016, geo: 'Asia Pacific' },
@@ -59,6 +68,7 @@ export const BACKBONE = [
   ['ap-northeast-1', 'us-west-2'], ['ap-southeast-1', 'ap-southeast-2'],
   ['ap-southeast-2', 'ap-southeast-4'], ['ap-southeast-2', 'us-west-1'],
   ['cn-north-1', 'cn-northwest-1'], ['sa-east-1', 'af-south-1'],
+  ['ap-southeast-2', 'ap-southeast-6'], ['eu-central-1', 'eusc-de-east-1'],
 ];
 
 // Representative CloudFront edge location metros (subset of 600+ PoPs in 100+ cities).
@@ -112,45 +122,66 @@ export const EDGE_LOCATIONS = [
   ['Shanghai', 'China', 31.23, 121.47], ['Shenzhen', 'China', 22.54, 114.06],
 ].map(([city, country, lat, lng]) => ({ city, country, lat, lng }));
 
-// AWS Local Zones (parent region = region code).
+// AWS Local Zones (parent region = region code). One entry per zone — metros with a
+// second-generation zone (e.g. us-east-1-atl-2a) or two zones (lax-1a/1b) appear twice,
+// with the second marker placed at a real nearby city in the same metro area.
+// 45 zones total per aws.amazon.com/about-aws/global-infrastructure (2026-07).
 export const LOCAL_ZONES = [
-  ['Atlanta', 'United States', 33.75, -84.39, 'us-east-1'],
+  ['Atlanta (atl-1a)', 'United States', 33.75, -84.39, 'us-east-1'],
+  ['Atlanta (atl-2a)', 'United States', 34.08, -84.29, 'us-east-1'],
   ['Boston', 'United States', 42.36, -71.06, 'us-east-1'],
-  ['Chicago', 'United States', 41.88, -87.63, 'us-east-1'],
-  ['Dallas', 'United States', 32.78, -96.8, 'us-east-1'],
+  ['Chicago (chi-1a)', 'United States', 41.88, -87.63, 'us-east-1'],
+  ['Chicago (chi-2a)', 'United States', 41.76, -88.32, 'us-east-1'],
+  ['Dallas (dfw-1a)', 'United States', 32.78, -96.8, 'us-east-1'],
+  ['Dallas (dfw-2a)', 'United States', 32.76, -97.33, 'us-east-1'],
   ['Denver', 'United States', 39.74, -104.99, 'us-west-2'],
-  ['Houston', 'United States', 29.76, -95.37, 'us-east-1'],
+  ['Honolulu', 'United States', 21.31, -157.86, 'us-west-2'],
+  ['Houston (iah-1a)', 'United States', 29.76, -95.37, 'us-east-1'],
+  ['Houston (iah-2a)', 'United States', 30.17, -95.46, 'us-east-1'],
   ['Kansas City', 'United States', 39.1, -94.58, 'us-east-1'],
   ['Las Vegas', 'United States', 36.17, -115.14, 'us-west-2'],
-  ['Los Angeles', 'United States', 34.05, -118.24, 'us-west-2'],
-  ['Miami', 'United States', 25.77, -80.19, 'us-east-1'],
+  ['Los Angeles (lax-1a)', 'United States', 34.05, -118.24, 'us-west-2'],
+  ['Los Angeles (lax-1b)', 'United States', 33.77, -118.19, 'us-west-2'],
+  ['Miami (mia-1a)', 'United States', 25.82, -80.36, 'us-east-1'],
+  ['Miami (mia-2a)', 'United States', 26.12, -80.14, 'us-east-1'],
   ['Minneapolis', 'United States', 44.98, -93.27, 'us-east-1'],
-  ['New York City', 'United States', 40.71, -74.01, 'us-east-1'],
+  ['New York City (nyc-1a)', 'United States', 40.72, -74.08, 'us-east-1'],
+  ['New York City (nyc-2a)', 'United States', 40.74, -74.17, 'us-east-1'],
   ['Philadelphia', 'United States', 39.95, -75.17, 'us-east-1'],
-  ['Phoenix', 'United States', 33.45, -112.07, 'us-west-2'],
+  ['Phoenix (phx-1a)', 'United States', 33.45, -112.07, 'us-west-2'],
+  ['Phoenix (phx-2a)', 'United States', 33.42, -111.83, 'us-west-2'],
   ['Portland', 'United States', 45.52, -122.68, 'us-west-2'],
   ['Seattle', 'United States', 47.61, -122.33, 'us-west-2'],
   ['Buenos Aires', 'Argentina', -34.6, -58.38, 'us-east-1'],
   ['Lima', 'Peru', -12.05, -77.04, 'us-east-1'],
   ['Querétaro', 'Mexico', 20.59, -100.39, 'us-east-1'],
   ['Santiago', 'Chile', -33.45, -70.67, 'us-east-1'],
-  ['Copenhagen', 'Denmark', 55.68, 12.57, 'eu-north-1'],
+  ['Copenhagen', 'Denmark', 55.67, 12.4, 'eu-north-1'],
   ['Helsinki', 'Finland', 60.17, 24.94, 'eu-north-1'],
   ['Hamburg', 'Germany', 53.55, 9.99, 'eu-central-1'],
   ['Warsaw', 'Poland', 52.23, 21.01, 'eu-central-1'],
+  ['Istanbul', 'Türkiye', 41.01, 28.98, 'eu-central-1'],
   ['Muscat', 'Oman', 23.59, 58.41, 'me-south-1'],
   ['Lagos', 'Nigeria', 6.52, 3.38, 'af-south-1'],
   ['Delhi', 'India', 28.61, 77.21, 'ap-south-1'],
   ['Kolkata', 'India', 22.57, 88.36, 'ap-south-1'],
   ['Bangkok', 'Thailand', 13.76, 100.5, 'ap-southeast-1'],
+  ['Hanoi', 'Vietnam', 21.03, 105.85, 'ap-southeast-1'],
   ['Manila', 'Philippines', 14.6, 120.98, 'ap-southeast-1'],
   ['Taipei', 'Taiwan', 25.03, 121.56, 'ap-northeast-1'],
   ['Auckland', 'New Zealand', -36.85, 174.76, 'ap-southeast-2'],
   ['Perth', 'Australia', -31.95, 115.86, 'ap-southeast-2'],
+  ['Beijing', 'China', 39.9, 116.41, 'cn-north-1'],
 ].map(([city, country, lat, lng, parent]) => ({ city, country, lat, lng, parent }));
 
 // AWS Wavelength Zones (carrier 5G edge; parent region = region code).
+// 33 zones total per aws.amazon.com/wavelength/locations (2026-07).
 export const WAVELENGTH_ZONES = [
+  ['Nashville', 'United States', 'Verizon', 36.16, -86.78, 'us-east-1'],
+  ['Lenexa', 'United States', 'Verizon', 38.95, -94.73, 'us-east-1'],
+  ['Manchester', 'United Kingdom', 'British Telecom', 53.42, -2.32, 'eu-west-2'],
+  ['Casablanca', 'Morocco', 'Orange', 33.57, -7.59, 'eu-west-3'],
+  ['Dakar', 'Senegal', 'Orange', 14.72, -17.47, 'eu-west-3'],
   ['Atlanta', 'United States', 'Verizon', 33.75, -84.39, 'us-east-1'],
   ['Boston', 'United States', 'Verizon', 42.36, -71.06, 'us-east-1'],
   ['Charlotte', 'United States', 'Verizon', 35.23, -80.84, 'us-east-1'],
@@ -161,9 +192,9 @@ export const WAVELENGTH_ZONES = [
   ['Houston', 'United States', 'Verizon', 29.76, -95.37, 'us-east-1'],
   ['Las Vegas', 'United States', 'Verizon', 36.17, -115.14, 'us-west-2'],
   ['Los Angeles', 'United States', 'Verizon', 34.05, -118.24, 'us-west-2'],
-  ['Miami', 'United States', 'Verizon', 25.77, -80.19, 'us-east-1'],
+  ['Miami', 'United States', 'Verizon', 25.82, -80.36, 'us-east-1'],
   ['Minneapolis', 'United States', 'Verizon', 44.98, -93.27, 'us-east-1'],
-  ['New York City', 'United States', 'Verizon', 40.71, -74.01, 'us-east-1'],
+  ['New York City', 'United States', 'Verizon', 40.72, -74.08, 'us-east-1'],
   ['Phoenix', 'United States', 'Verizon', 33.45, -112.07, 'us-west-2'],
   ['San Francisco Bay Area', 'United States', 'Verizon', 37.77, -122.42, 'us-west-2'],
   ['Seattle', 'United States', 'Verizon', 47.61, -122.33, 'us-west-2'],
@@ -179,7 +210,6 @@ export const WAVELENGTH_ZONES = [
   ['Seoul', 'South Korea', 'SK Telecom', 37.57, 126.98, 'ap-northeast-2'],
   ['Daejeon', 'South Korea', 'SK Telecom', 36.35, 127.38, 'ap-northeast-2'],
   ['Toronto', 'Canada', 'Bell', 43.65, -79.38, 'ca-central-1'],
-  ['Vancouver', 'Canada', 'Bell', 49.28, -123.12, 'ca-central-1'],
 ].map(([city, country, carrier, lat, lng, parent]) => ({ city, country, carrier, lat, lng, parent }));
 
 // AWS Direct Connect locations (representative subset of 115+ sites; one per metro).
@@ -274,6 +304,7 @@ export const AZ_SITES = {
   'eu-west-3': [[48.86, 2.35], [47.90, 1.90], [49.26, 4.03]],
   'eu-central-1': [[50.11, 8.68], [49.79, 9.95], [50.36, 7.59]],
   'eu-central-2': [[47.37, 8.54], [46.95, 7.45], [47.42, 9.37]],
+  'eusc-de-east-1': [[52.40, 13.05], [51.76, 14.33], [52.35, 14.55]],
   'eu-north-1': [[59.33, 18.06], [59.61, 16.55], [58.75, 17.01]],
   'eu-south-1': [[45.46, 9.19], [45.54, 10.21], [45.05, 9.70]],
   'eu-south-2': [[41.65, -0.88], [42.14, -0.41], [40.34, -1.11]],
@@ -290,6 +321,7 @@ export const AZ_SITES = {
   'ap-southeast-3': [[-6.21, 106.85], [-6.91, 107.61], [-6.60, 106.80]],
   'ap-southeast-4': [[-37.81, 144.96], [-37.56, 143.86], [-38.20, 146.54]],
   'ap-southeast-5': [[3.14, 101.69], [2.73, 101.94], [4.60, 101.08]],
+  'ap-southeast-6': [[-36.85, 174.76], [-37.79, 175.28], [-35.73, 174.32]],
   'ap-southeast-7': [[13.76, 100.50], [14.35, 100.57], [13.53, 101.36]],
   'ap-northeast-1': [[35.66, 139.32], [35.86, 139.65], [36.08, 140.11], [35.26, 139.15]],
   'ap-northeast-2': [[37.57, 126.98], [37.88, 127.73], [36.82, 127.15], [37.34, 127.95]],
@@ -303,6 +335,7 @@ export const CORE_SERVICES = ['EC2', 'S3', 'VPC', 'Lambda', 'RDS', 'DynamoDB', '
 export const BIG_REGION_SERVICES = ['EKS', 'SageMaker', 'Bedrock', 'Redshift', 'Aurora', 'Kinesis', 'MSK', 'OpenSearch'];
 
 export function regionBlurb(r) {
+  if (r.sovereign) return `${r.name} is the first region of the AWS European Sovereign Cloud, a physically and logically separate partition located in Brandenburg, Germany. It is operated entirely by EU-resident personnel under EU law, with all data and metadata kept inside the European Union for digital-sovereignty requirements.`;
   if (r.govcloud) return `${r.name} is an isolated AWS partition built for U.S. government workloads requiring FedRAMP High, ITAR, and DoD SRG compliance. It is operated by U.S. citizens on U.S. soil and is logically and physically separate from the commercial AWS partition.`;
   if (r.china) return `${r.name} is part of the separate AWS China partition, operated by a local partner (${r.code === 'cn-north-1' ? 'Sinnet' : 'NWCD'}) to comply with Chinese regulations. It requires a separate account and is isolated from the global AWS partition.`;
   return `${r.name} (${r.code}) launched in ${r.launched} and contains ${r.azs} Availability Zones — physically separate data center clusters within ${r.city ? r.city + ', ' : ''}${r.country}, each with independent power, cooling, and networking, interconnected by low-latency fiber. Deploying across multiple AZs is the foundation of high availability on AWS.`;

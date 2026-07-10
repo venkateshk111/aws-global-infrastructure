@@ -268,7 +268,7 @@ const nearestRegion = (lat, lng) => {
   const p = latLngToVec3(lat, lng);
   let best = null, bd = Infinity;
   for (const r of REGIONS) {
-    if (r.china || r.govcloud) continue;
+    if (r.china || r.govcloud || r.sovereign) continue;
     const d = regionPos[r.code].distanceTo(p);
     if (d < bd) { bd = d; best = r; }
   }
@@ -402,7 +402,7 @@ function openRegionPanel(r) {
   const li = (arr, f) => arr.length
     ? `<ul>${arr.map((x) => `<li>${f(x)}</li>`).join('')}</ul>`
     : '<div style="color:var(--muted);font-size:12px">None directly attached</div>';
-  const services = r.govcloud || r.china ? CORE_SERVICES : [...CORE_SERVICES, ...BIG_REGION_SERVICES];
+  const services = r.govcloud || r.china || r.sovereign ? CORE_SERVICES : [...CORE_SERVICES, ...BIG_REGION_SERVICES];
   panelBody.innerHTML = `
     <h2>${r.name}</h2>
     <div class="region-code">${r.code}</div>
@@ -437,8 +437,8 @@ canvas.addEventListener('pointerup', (e) => {
 
 // ---------- stats ----------
 document.getElementById('stats').textContent =
-  `${REGIONS.length} Regions · ${azItems.length} AZs · ${EDGE_LOCATIONS.length}+ Edge metros · ` +
-  `${LOCAL_ZONES.length} Local Zones · ${WAVELENGTH_ZONES.length} Wavelength Zones · ${DIRECT_CONNECT.length}+ Direct Connect`;
+  `${REGIONS.length} Regions · ${azItems.length} AZs · ${LOCAL_ZONES.length} Local Zones · ` +
+  `${WAVELENGTH_ZONES.length} Wavelength Zones · 750+ CloudFront PoPs (${EDGE_LOCATIONS.length} metros shown) · ${DIRECT_CONNECT.length}+ Direct Connect`;
 
 // ---------- boot ----------
 function resize() {
