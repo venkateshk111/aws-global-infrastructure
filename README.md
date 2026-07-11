@@ -84,7 +84,7 @@ https://aws.amazon.com/about-aws/global-infrastructure/
 * AWS 4x Certified
 
 
-LinkedIn: [https://www.linkedin.com/in/venkatesh111/](https://www.linkedin.com/in/venkatesh111/)
+LinkedIn: [linkedin.com/in/venkatesh111/](https://www.linkedin.com/in/venkatesh111/)
 
 ---
 
