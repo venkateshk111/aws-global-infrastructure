@@ -16,8 +16,8 @@
     <meta name="twitter:title" content="AWS Global Infrastructure" />
     <meta name="twitter:description" content="Interactive 3D globe of AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones and Direct Connect sites." />
     <meta name="twitter:image" content="https://venkateshk111.github.io/aws-global-infrastructure/og-image.png" />
-    <script type="module" crossorigin src="/aws-global-infrastructure/assets/index-CuNQNRCu.js"></script>
-    <link rel="stylesheet" crossorigin href="/aws-global-infrastructure/assets/index-D84b_QfT.css">
+    <script type="module" crossorigin src="/aws-global-infrastructure/assets/index-D9adHPN-.js"></script>
+    <link rel="stylesheet" crossorigin href="/aws-global-infrastructure/assets/index-CL0QR-EU.css">
   </head>
   <body>
     <div id="app">
@@ -25,7 +25,10 @@
 
       <header id="topbar">
         <div class="logo"><span class="logo-aws">AWS</span> Global Infrastructure</div>
-        <div id="stats"></div>
+        <div id="topbar-right">
+          <div id="stats"></div>
+          <button id="theme-toggle" aria-label="Toggle light/dark theme">☀</button>
+        </div>
       </header>
 
       <button id="controls-toggle" aria-label="Toggle layers panel">⚙ Layers</button>
@@ -46,6 +49,25 @@
           <option value="dx">Direct Connect ingress</option>
           <option value="multiregion">Multi-region app</option>
         </select>
+        <details id="glossary">
+          <summary>Glossary</summary>
+          <dl>
+            <dt>Region</dt>
+            <dd>A geographic cluster of AWS data centers made up of multiple isolated Availability Zones. You pick a region to control where your apps and data live.</dd>
+            <dt>Availability Zone</dt>
+            <dd>One or more data centers inside a region with independent power, cooling and networking. Spreading across AZs protects apps from single-facility failures.</dd>
+            <dt>Local Zone</dt>
+            <dd>A small extension of a region placed in a large metro area, bringing compute and storage within single-digit milliseconds of end users.</dd>
+            <dt>Wavelength Zone</dt>
+            <dd>AWS compute embedded inside a telecom carrier's 5G network, so mobile traffic reaches your app without leaving the carrier's network.</dd>
+            <dt>Edge Location</dt>
+            <dd>A CloudFront point of presence that caches content close to viewers to speed up delivery. AWS operates 750+ of them worldwide.</dd>
+            <dt>Direct Connect</dt>
+            <dd>A colocation facility where customers link their own network to AWS over dedicated private fiber instead of the public internet.</dd>
+            <dt>Backbone Network</dt>
+            <dd>AWS's private global fiber network — terrestrial and subsea — that carries traffic between regions and edge sites without touching the public internet.</dd>
+          </dl>
+        </details>
       </aside>
 
       <div id="tooltip" hidden></div>
