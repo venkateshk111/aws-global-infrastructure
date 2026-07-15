@@ -70,7 +70,7 @@ It is intended to complement the official AWS documentation and provide an easie
 
 ## 🗂️ Version History
 
-### v2.0 — Learning & Usability Enhancements
+### v1.1 — Learning & Usability Enhancements
 * Added AZ-count badges on each Region marker on the globe, tied to the Availability Zones layer toggle
 * Added a "Nearest Edge Locations" section to the Region side panel, computed by geographic distance
 * Added inline ⓘ info icons with plain-language definitions for every panel section, including Regions
