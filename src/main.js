@@ -35,17 +35,36 @@ function latLngToVec3(lat, lng, r = R) {
   );
 }
 
+// ---------- theme palettes (3D scene side; CSS side lives in style.css) ----------
+const THEME3D = {
+  dark: {
+    bg: 0x05080f, ocean: '#0a1526', land: '#1c2c47',
+    stroke: 'rgba(120,160,220,0.35)', grat: 'rgba(80,110,160,0.10)',
+    blending: THREE.AdditiveBlending, lineColor: 0x4d7fff, lineOpacity: 0.28,
+    pulseColor: 0x9db8ff, stars: true,
+  },
+  light: {
+    bg: 0xdde7f3, ocean: '#c4d7ea', land: '#f4f6fa',
+    stroke: 'rgba(70,100,150,0.55)', grat: 'rgba(60,90,140,0.14)',
+    blending: THREE.NormalBlending, lineColor: 0x2f5fd0, lineOpacity: 0.5,
+    pulseColor: 0x2f55c8, stars: false,
+  },
+};
+let themeMode = 'dark';
+
 // ---------- Globe surface: landmasses drawn from GeoJSON onto an equirectangular canvas ----------
-async function buildGlobeTexture() {
-  const geo = await (await fetch(`${import.meta.env.BASE_URL}world-ind.json`)).json();
+let geoDataPromise;
+async function buildGlobeTexture(p) {
+  geoDataPromise ??= fetch(`${import.meta.env.BASE_URL}world-ind.json`).then((r) => r.json());
+  const geo = await geoDataPromise;
   const W = 4096, H = 2048;
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = '#0a1526';
+  ctx.fillStyle = p.ocean;
   ctx.fillRect(0, 0, W, H);
   // faint graticule
-  ctx.strokeStyle = 'rgba(80,110,160,0.10)';
+  ctx.strokeStyle = p.grat;
   ctx.lineWidth = 1;
   for (let lng = -180; lng <= 180; lng += 15) {
     const x = (lng + 180) / 360 * W;
@@ -66,14 +85,14 @@ async function buildGlobeTexture() {
     ctx.fill();
     ctx.stroke();
   };
-  ctx.fillStyle = '#1c2c47';
-  ctx.strokeStyle = 'rgba(120,160,220,0.35)';
+  ctx.fillStyle = p.land;
+  ctx.strokeStyle = p.stroke;
   ctx.lineWidth = 1.5;
   for (const f of geo.features) {
     const g = f.geometry;
     if (!g) continue;
     if (g.type === 'Polygon') g.coordinates.forEach(drawRing);
-    else if (g.type === 'MultiPolygon') g.coordinates.forEach((p) => p.forEach(drawRing));
+    else if (g.type === 'MultiPolygon') g.coordinates.forEach((p2) => p2.forEach(drawRing));
   }
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -104,6 +123,7 @@ const atmosphere = new THREE.Mesh(
 scene.add(atmosphere);
 
 // star field
+let stars;
 {
   const n = 1500, pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
@@ -112,9 +132,10 @@ scene.add(atmosphere);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+  stars = new THREE.Points(g, new THREE.PointsMaterial({
     color: 0x8899bb, size: 0.035, sizeAttenuation: true, transparent: true, opacity: 0.7,
-  })));
+  }));
+  scene.add(stars);
 }
 
 // ---------- glowing marker sprite ----------
@@ -166,6 +187,34 @@ makeLayer('regions', REGIONS, (r) => ({
   pos: regionPos[r.code], type: 'Region', name: r.name, code: r.code,
   country: r.country, detail: `${r.azs} Availability Zones · launched ${r.launched}`, region: r,
 }));
+
+// AZ-count badges floating beside each region marker
+const badgeTexCache = {};
+function badgeTexture(n) {
+  if (badgeTexCache[n]) return badgeTexCache[n];
+  const s = 64, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const ctx = c.getContext('2d');
+  ctx.beginPath(); ctx.arc(32, 32, 26, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(13,20,36,0.92)'; ctx.fill();
+  ctx.lineWidth = 3; ctx.strokeStyle = '#ff9900'; ctx.stroke();
+  ctx.font = '700 30px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffb84d'; ctx.fillText(String(n), 32, 34);
+  const tex = new THREE.CanvasTexture(c);
+  badgeTexCache[n] = tex;
+  return tex;
+}
+const badgeGroup = new THREE.Group();
+for (const r of REGIONS) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: badgeTexture(r.azs), transparent: true, depthWrite: false,
+  }));
+  sp.scale.setScalar(0.034);
+  sp.position.copy(regionPos[r.code]).normalize().multiplyScalar(R * 1.052);
+  badgeGroup.add(sp);
+}
+scene.add(badgeGroup);
 
 // AZ dots at verified on-land coordinates near each region (see AZ_SITES in data.js)
 const azItems = [];
@@ -336,7 +385,10 @@ document.querySelectorAll('#controls input[data-layer]').forEach((cb) => {
     if (l === 'backbone') {
       backboneGroup.visible = cb.checked;
       backbonePulses.pts.visible = cb.checked;
-    } else layers[l].points.visible = cb.checked;
+    } else {
+      layers[l].points.visible = cb.checked;
+      if (l === 'azs') badgeGroup.visible = cb.checked;
+    }
   });
 });
 
@@ -350,6 +402,10 @@ let hovered = null;
 const TYPE_COLORS = {
   'Region': '#ff9900', 'Availability Zone': '#ffd280', 'Edge Location': '#00d1ff',
   'Local Zone': '#7fff9e', 'Wavelength Zone': '#c77dff', 'Direct Connect': '#ff5d8f',
+};
+const TYPE_COLORS_LIGHT = {
+  'Region': '#b36b00', 'Availability Zone': '#8a6116', 'Edge Location': '#00708a',
+  'Local Zone': '#1e7a3a', 'Wavelength Zone': '#7a3fa8', 'Direct Connect': '#b3234f',
 };
 
 canvas.addEventListener('pointermove', (e) => {
@@ -383,7 +439,7 @@ function updateHover() {
   const m = p.meta;
   tooltip.hidden = false;
   tooltip.innerHTML = `
-    <div class="tt-type" style="color:${TYPE_COLORS[m.type]}">${m.type}</div>
+    <div class="tt-type" style="color:${(themeMode === 'light' ? TYPE_COLORS_LIGHT : TYPE_COLORS)[m.type]}">${m.type}</div>
     <div class="tt-name">${m.name}</div>
     <div class="tt-sub">${m.code} · ${m.country}</div>
     <div class="tt-sub">${m.detail}</div>`;
@@ -393,27 +449,66 @@ const panel = document.getElementById('panel');
 const panelBody = document.getElementById('panel-body');
 document.getElementById('panel-close').addEventListener('click', () => { panel.hidden = true; });
 
+// info-icon tooltip: opens above its heading; flips below only when the visible
+// panel area has no room above (e.g. the Region header at the very top)
+const panelTip = document.createElement('div');
+panelTip.id = 'panel-tip';
+panelTip.hidden = true;
+panel.appendChild(panelTip);
+function showInfoTip(icon) {
+  const head = icon.closest('h2, h4');
+  panelTip.textContent = icon.dataset.tip;
+  panelTip.style.left = `${head.offsetLeft}px`;
+  panelTip.style.width = `${head.offsetWidth - 20}px`;
+  panelTip.hidden = false;
+  const above = head.offsetTop - panelTip.offsetHeight - 4;
+  panelTip.style.top = above >= panel.scrollTop + 6
+    ? `${above}px`
+    : `${head.offsetTop + head.offsetHeight + 4}px`;
+}
+panelBody.addEventListener('mouseover', (e) => { const i = e.target.closest('.info'); if (i) showInfoTip(i); });
+panelBody.addEventListener('mouseout', (e) => { if (e.target.closest('.info')) panelTip.hidden = true; });
+panelBody.addEventListener('focusin', (e) => { const i = e.target.closest('.info'); if (i) showInfoTip(i); });
+panelBody.addEventListener('focusout', (e) => { if (e.target.closest('.info')) panelTip.hidden = true; });
+
+const SECTION_TIPS = {
+  region: 'A Region is a physical cluster of AWS data centers in one geographic area, made up of multiple isolated Availability Zones. You choose a region to control where your apps and data live.',
+  az: 'Isolated data center clusters within the region, each with independent power, cooling and networking. Spreading an app across AZs lets it survive a single-facility failure.',
+  lz: 'Extensions of the region that place compute and storage in large metro areas closer to end users, for single-digit-millisecond latency.',
+  wl: "AWS infrastructure embedded inside a telecom carrier's 5G network, so mobile traffic reaches AWS compute without leaving the carrier's network.",
+  dx: 'Colocation sites where customers plug their own networks into AWS over dedicated private fiber instead of the public internet.',
+  edge: 'CloudFront points of presence that cache content close to viewers. Listed here are the PoPs geographically nearest to this region.',
+};
+const sect = (title, tipKey) =>
+  `<h4>${title}<span class="info" tabindex="0" data-tip="${SECTION_TIPS[tipKey]}">&#9432;</span></h4>`;
+
 function openRegionPanel(r) {
+  panelTip.hidden = true;
   const azList = Array.from({ length: r.azs }, (_, i) =>
     `<li><span class="az-code">${r.code}${String.fromCharCode(97 + i)}</span><span class="li-sub">independent power, cooling &amp; network</span></li>`).join('');
   const lz = LOCAL_ZONES.filter((z) => z.parent === r.code);
   const wl = WAVELENGTH_ZONES.filter((z) => z.parent === r.code);
   const dx = DIRECT_CONNECT.filter((d) => d.region === r.code);
+  const rp = latLngToVec3(r.lat, r.lng);
+  const edges = EDGE_LOCATIONS
+    .map((e) => ({ ...e, d: latLngToVec3(e.lat, e.lng).distanceTo(rp) }))
+    .sort((a, b) => a.d - b.d).slice(0, 5);
   const li = (arr, f) => arr.length
     ? `<ul>${arr.map((x) => `<li>${f(x)}</li>`).join('')}</ul>`
     : '<div style="color:var(--muted);font-size:12px">None directly attached</div>';
   const services = r.govcloud || r.china || r.sovereign ? CORE_SERVICES : [...CORE_SERVICES, ...BIG_REGION_SERVICES];
   panelBody.innerHTML = `
-    <h2>${r.name}</h2>
+    <h2>${r.name}<span class="info" tabindex="0" data-tip="${SECTION_TIPS.region}">&#9432;</span></h2>
     <div class="region-code">${r.code}</div>
     <div class="meta">${r.city}, ${r.country} · launched ${r.launched} · ${r.geo}</div>
     <div class="blurb">${regionBlurb(r)}</div>
-    <h4>Availability Zones (${r.azs})</h4><ul>${azList}</ul>
+    ${sect(`Availability Zones (${r.azs})`, 'az')}<ul>${azList}</ul>
     <h4>Supported services (selection)</h4>
     <div class="chips">${services.map((s) => `<span class="chip">${s}</span>`).join('')}</div>
-    <h4>Local Zones (${lz.length})</h4>${li(lz, (z) => `${z.city}, ${z.country}`)}
-    <h4>Wavelength Zones (${wl.length})</h4>${li(wl, (z) => `${z.city} — ${z.carrier}`)}
-    <h4>Direct Connect locations (${dx.length})</h4>${li(dx, (d) => `${d.name}`)}`;
+    ${sect(`Local Zones (${lz.length})`, 'lz')}${li(lz, (z) => `${z.city}, ${z.country}`)}
+    ${sect(`Wavelength Zones (${wl.length})`, 'wl')}${li(wl, (z) => `${z.city} — ${z.carrier}`)}
+    ${sect(`Direct Connect locations (${dx.length})`, 'dx')}${li(dx, (d) => `${d.name}`)}
+    ${sect(`Nearest Edge Locations (${edges.length})`, 'edge')}${li(edges, (e) => `${e.city}, ${e.country}`)}`;
   panel.hidden = false;
 }
 
@@ -452,12 +547,52 @@ resize();
 const clock = new THREE.Clock();
 let hoverTick = 0;
 
-buildGlobeTexture().then((tex) => {
-  const globe = new THREE.Mesh(
+let globeMesh;
+const globeTextures = {};
+buildGlobeTexture(THEME3D.dark).then((tex) => {
+  globeTextures.dark = tex;
+  globeMesh = new THREE.Mesh(
     new THREE.SphereGeometry(R, 96, 96),
-    new THREE.MeshBasicMaterial({ map: tex }),
+    new THREE.MeshBasicMaterial({ map: globeTextures[themeMode] || tex }),
   );
-  scene.add(globe);
+  scene.add(globeMesh);
+});
+
+// ---------- dark/light theme toggle ----------
+async function applyTheme(mode) {
+  themeMode = mode;
+  const t = THEME3D[mode];
+  document.body.classList.toggle('light', mode === 'light');
+  document.getElementById('theme-toggle').textContent = mode === 'light' ? '☾' : '☀';
+  scene.background = new THREE.Color(t.bg);
+  stars.visible = t.stars;
+  for (const l of Object.values(layers)) {
+    l.points.material.blending = t.blending;
+    l.points.material.needsUpdate = true;
+  }
+  for (const line of backboneGroup.children) {
+    line.material.blending = t.blending;
+    line.material.color.setHex(t.lineColor);
+    line.material.opacity = t.lineOpacity;
+    line.material.needsUpdate = true;
+  }
+  backbonePulses.pts.material.blending = t.blending;
+  backbonePulses.pts.material.color.setHex(t.pulseColor);
+  backbonePulses.pts.material.needsUpdate = true;
+  simPulses.pts.material.blending = t.blending;
+  simPulses.pts.material.needsUpdate = true;
+  for (const line of simArcs.children) {
+    line.material.blending = t.blending;
+    line.material.needsUpdate = true;
+  }
+  globeTextures[mode] ??= await buildGlobeTexture(t);
+  if (globeMesh && themeMode === mode) {
+    globeMesh.material.map = globeTextures[mode];
+    globeMesh.material.needsUpdate = true;
+  }
+}
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  applyTheme(themeMode === 'dark' ? 'light' : 'dark');
 });
 
 function animate() {

@@ -68,6 +68,24 @@ It is intended to complement the official AWS documentation and provide an easie
 
 ---
 
+## 🗂️ Version History
+
+### v2.0 — Learning & Usability Enhancements
+* Added AZ-count badges on each Region marker on the globe, tied to the Availability Zones layer toggle
+* Added a "Nearest Edge Locations" section to the Region side panel, computed by geographic distance
+* Added inline ⓘ info icons with plain-language definitions for every panel section, including Regions
+* Added a collapsible Glossary section (below the Layers card) covering Region, AZ, Local Zone, Wavelength Zone, Edge Location, Direct Connect, and Backbone Network
+* Added a Dark/Light theme toggle, with adjusted marker/line rendering so glowing elements stay visible in both modes
+
+### v1.0 — Initial Release
+* Interactive 3D globe with AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones, and Direct Connect locations
+* Animated AWS backbone network connections with traffic flow effects
+* Hover tooltips and clickable Region side panels with detailed information
+* Layer toggle controls and traffic simulation modes (CloudFront delivery, S3 Cross-Region Replication, and more)
+* AWS-inspired dark theme, deployed via GitHub Pages
+
+---
+
 ## 📚 Learn More
 
 Official AWS documentation:
@@ -84,7 +102,7 @@ https://aws.amazon.com/about-aws/global-infrastructure/
 * AWS 4x Certified
 
 
-LinkedIn: [https://github.com/venkateshk111](https://www.linkedin.com/in/venkatesh111/)
+LinkedIn: [linkedin.com/in/venkatesh111/](https://www.linkedin.com/in/venkatesh111/)
 
 ---
 
