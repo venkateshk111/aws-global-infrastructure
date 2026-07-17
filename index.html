@@ -16,8 +16,8 @@
     <meta name="twitter:title" content="AWS Global Infrastructure" />
     <meta name="twitter:description" content="Interactive 3D globe of AWS Regions, Availability Zones, Edge Locations, Local Zones, Wavelength Zones and Direct Connect sites." />
     <meta name="twitter:image" content="https://venkateshk111.github.io/aws-global-infrastructure/og-image.png" />
-    <script type="module" crossorigin src="/aws-global-infrastructure/assets/index-D9adHPN-.js"></script>
-    <link rel="stylesheet" crossorigin href="/aws-global-infrastructure/assets/index-CL0QR-EU.css">
+    <script type="module" crossorigin src="/aws-global-infrastructure/assets/index-CXQPXgQ1.js"></script>
+    <link rel="stylesheet" crossorigin href="/aws-global-infrastructure/assets/index-BcwKDsrp.css">
   </head>
   <body>
     <div id="app">
@@ -25,6 +25,10 @@
 
       <header id="topbar">
         <div class="logo"><span class="logo-aws">AWS</span> Global Infrastructure</div>
+        <div id="search">
+          <input id="search-input" type="text" placeholder="Jump to region…" autocomplete="off" spellcheck="false" />
+          <ul id="search-list" hidden></ul>
+        </div>
         <div id="topbar-right">
           <div id="stats"></div>
           <button id="theme-toggle" aria-label="Toggle light/dark theme">☀</button>
@@ -49,6 +53,8 @@
           <option value="dx">Direct Connect ingress</option>
           <option value="multiregion">Multi-region app</option>
         </select>
+        <h3>Guided Tours</h3>
+        <div id="tours"></div>
         <details id="glossary">
           <summary>Glossary</summary>
           <dl>
@@ -76,6 +82,16 @@
         <button id="panel-close">×</button>
         <div id="panel-body"></div>
       </aside>
+
+      <div id="tour-hud" hidden>
+        <div id="tour-title"></div>
+        <div id="tour-text"></div>
+        <div id="tour-controls">
+          <span id="tour-progress"></span>
+          <button id="tour-pause" aria-label="Pause or resume tour">⏸</button>
+          <button id="tour-exit" aria-label="Exit tour">✕</button>
+        </div>
+      </div>
 
       <div id="watermark">Built by Venkatesh for educational purposes · Not affiliated with AWS</div>
     </div>
