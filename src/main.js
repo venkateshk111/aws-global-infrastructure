@@ -14,6 +14,7 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x05080f);
 const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 100);
 camera.position.set(0, 0.6, 2.6);
+const HOME_POS = camera.position.clone(); // initial idle view; tours return here
 
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
@@ -182,6 +183,35 @@ function makeLayer(name, items, toMeta) {
 }
 
 const regionPos = Object.fromEntries(REGIONS.map((r) => [r.code, latLngToVec3(r.lat, r.lng, R * 1.008)]));
+const regionByCode = Object.fromEntries(REGIONS.map((r) => [r.code, r]));
+
+// ---------- camera fly-to (used by deep links, search and tours) ----------
+let flyAnim = null;
+function flyTo(lat, lng, dist = 2.0, ms = 1500) {
+  controls.autoRotate = false;
+  flyAnim = { from: camera.position.clone(), to: latLngToVec3(lat, lng, dist), t0: performance.now(), ms };
+}
+function stepFly() {
+  if (!flyAnim) return;
+  const k = Math.min((performance.now() - flyAnim.t0) / flyAnim.ms, 1);
+  const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2; // easeInOutQuad
+  const dir = flyAnim.from.clone().normalize().lerp(flyAnim.to.clone().normalize(), e).normalize();
+  const radius = flyAnim.from.length() + (flyAnim.to.length() - flyAnim.from.length()) * e;
+  camera.position.copy(dir.multiplyScalar(radius));
+  if (k >= 1) {
+    const done = flyAnim.onDone;
+    flyAnim = null;
+    done?.();
+  }
+}
+// return to the initial idle view and resume the default auto-rotation
+function flyHome() {
+  flyAnim = {
+    from: camera.position.clone(), to: HOME_POS.clone(),
+    t0: performance.now(), ms: 1600,
+    onDone: () => { controls.autoRotate = true; },
+  };
+}
 
 makeLayer('regions', REGIONS, (r) => ({
   pos: regionPos[r.code], type: 'Region', name: r.name, code: r.code,
@@ -512,11 +542,27 @@ function openRegionPanel(r) {
   panel.hidden = false;
 }
 
+// ---------- region selection + shareable deep links (?region=code) ----------
+function setRegionURL(code) {
+  const u = new URL(location);
+  if (code) u.searchParams.set('region', code);
+  else u.searchParams.delete('region');
+  history.replaceState(null, '', u);
+}
+function selectRegion(code, { fly = false } = {}) {
+  const r = regionByCode[code];
+  if (!r) return;
+  openRegionPanel(r);
+  if (fly) flyTo(r.lat, r.lng, 2.0);
+  setRegionURL(code);
+}
+document.getElementById('panel-close').addEventListener('click', () => setRegionURL(null));
+
 let downAt = null;
-canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; flyAnim = null; pauseTourOnInteract(); });
 canvas.addEventListener('pointerup', (e) => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 5) return;
-  if (hovered && hovered.layer === 'regions') { openRegionPanel(hovered.meta.region); return; }
+  if (hovered && hovered.layer === 'regions') { selectRegion(hovered.meta.region.code); return; }
   // AZ markers sit close to their region marker and can win the hover pick;
   // raycast the regions layer directly so region clicks always work
   if (!layers.regions.points.visible) return;
@@ -525,10 +571,154 @@ canvas.addEventListener('pointerup', (e) => {
   const camDir = camera.position.clone().normalize();
   for (const hit of raycaster.intersectObject(layers.regions.points)) {
     if (hit.point.clone().normalize().dot(camDir) < 0.25) continue;
-    openRegionPanel(layers.regions.meta[hit.index].region);
+    selectRegion(layers.regions.meta[hit.index].region.code);
     return;
   }
 });
+
+// ---------- search / jump-to-region ----------
+const searchInput = document.getElementById('search-input');
+const searchList = document.getElementById('search-list');
+function searchMatches(q) {
+  q = q.trim().toLowerCase();
+  if (!q) return [];
+  return REGIONS.filter((r) =>
+    r.code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) ||
+    r.city.toLowerCase().includes(q) || r.country.toLowerCase().includes(q)).slice(0, 8);
+}
+function renderSearchList(matches) {
+  if (!matches.length) { searchList.hidden = true; return; }
+  searchList.innerHTML = matches.map((r) =>
+    `<li data-code="${r.code}"><b>${r.name}</b> <span>${r.code}</span></li>`).join('');
+  searchList.hidden = false;
+}
+function pickSearch(code) {
+  searchInput.value = '';
+  searchList.hidden = true;
+  searchInput.blur();
+  selectRegion(code, { fly: true });
+}
+searchInput.addEventListener('input', () => renderSearchList(searchMatches(searchInput.value)));
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const m = searchMatches(searchInput.value);
+    if (m.length) pickSearch(m[0].code);
+  } else if (e.key === 'Escape') { searchList.hidden = true; searchInput.blur(); }
+});
+searchInput.addEventListener('blur', () => setTimeout(() => { searchList.hidden = true; }, 150));
+searchList.addEventListener('mousedown', (e) => {
+  const li = e.target.closest('li[data-code]');
+  if (li) { e.preventDefault(); pickSearch(li.dataset.code); }
+});
+
+// ---------- guided tours ----------
+const setSim = (value) => {
+  const sel = document.getElementById('sim');
+  sel.value = value;
+  sel.dispatchEvent(new Event('change'));
+};
+const TOURS = [
+  {
+    id: 'firsttour', title: 'Your First Tour: What Am I Looking At?', sim: 'off',
+    stops: [
+      { code: 'us-east-1', dist: 2.2, ms: 9000, text: 'This big orange dot is a Region — a cluster of AWS data centers in one part of the world. The number on its badge shows how many Availability Zones it has. There are 39 Regions like this across the globe.' },
+      { code: 'us-east-1', dist: 1.35, ms: 9000, text: 'Zoom in and smaller amber dots appear around the Region: its Availability Zones. Each one is a separate set of data centers with its own power and networking — if one has a problem, the others keep running.' },
+      { lat: 48, lng: 8, dist: 1.9, ms: 9000, text: 'The small cyan dots are Edge Locations — mini data centers in hundreds of cities that keep copies of websites and videos close to viewers, so pages load fast even when the nearest Region is far away.' },
+      { lat: 25, lng: -40, dist: 3.4, ms: 10000, text: 'And the blue arcs? That’s the Backbone Network — AWS’s own private fiber, on land and under the sea, connecting everything. Regions run your apps, AZs keep them alive, Edge makes them fast, and the backbone ties it all together.' },
+    ],
+  },
+  {
+    id: 'cloudfront', title: 'How CloudFront delivers content globally', sim: 'cloudfront',
+    stops: [
+      { code: 'us-east-1', dist: 2.2, ms: 8000, text: 'Your content lives at an origin — say an S3 bucket or load balancer in N. Virginia. Without a CDN, every viewer worldwide would fetch it from here.' },
+      { code: 'eu-west-2', dist: 1.8, ms: 8000, text: 'A viewer in London requests your page. DNS routes them not to Virginia, but to the nearest CloudFront edge location — one of 750+ PoPs worldwide.' },
+      { code: 'ap-south-1', dist: 1.8, ms: 8000, text: 'Same story in Mumbai: cache hits are served locally in milliseconds and never cross an ocean. Only cache misses fetch from the origin — once.' },
+      { lat: 20, lng: 30, dist: 3.4, ms: 9000, text: 'Misses travel over AWS’s private backbone (the flows you see), get cached at the edge, then serve millions of viewers locally. That’s the whole trick: move content once, serve it everywhere.' },
+    ],
+  },
+  {
+    id: 'tgw', title: 'Why Transit Gateway beats VPC Peering at scale', sim: 'multiregion',
+    stops: [
+      { code: 'us-east-1', dist: 2.2, ms: 8000, text: 'Two VPCs that need to talk? A single VPC Peering connection is simple and free of extra hops. So far so good.' },
+      { code: 'eu-west-1', dist: 2.2, ms: 8000, text: 'Now scale to 10 VPCs across regions: full-mesh peering needs n(n−1)/2 = 45 connections — every route table maintained by hand, and peering isn’t transitive.' },
+      { code: 'ap-southeast-1', dist: 2.2, ms: 8000, text: 'Transit Gateway flips the model: a regional hub each VPC attaches to exactly once. 10 VPCs = 10 attachments, one routing domain.' },
+      { lat: 25, lng: 60, dist: 3.4, ms: 9000, text: 'Hubs in different regions peer with each other over AWS’s backbone (never the public internet) — hub-and-spoke across the planet instead of a quadratic spaghetti mesh.' },
+    ],
+  },
+  {
+    id: 's3crr', title: 'S3 Cross-Region Replication in action', sim: 's3crr',
+    stops: [
+      { code: 'us-east-1', dist: 2.2, ms: 8000, text: 'Objects land in a source bucket in N. Virginia. S3 already stores them across at least 3 AZs — but everything is still in one geographic region.' },
+      { code: 'eu-west-1', dist: 2.0, ms: 8000, text: 'Cross-Region Replication asynchronously copies new objects to a bucket in another region — here Ireland — over the AWS backbone (the green flows).' },
+      { code: 'ap-northeast-1', dist: 2.0, ms: 8000, text: 'Replicate to Tokyo too: reads get local latency, compliance gets data residency, and a whole-region outage can’t take your data offline.' },
+    ],
+  },
+];
+const tourHud = document.getElementById('tour-hud');
+const tourTitle = document.getElementById('tour-title');
+const tourText = document.getElementById('tour-text');
+const tourProgress = document.getElementById('tour-progress');
+const tourPauseBtn = document.getElementById('tour-pause');
+let tour = null; // { def, i, timer, paused }
+
+function tourStop() {
+  const s = tour.def.stops[tour.i];
+  const target = s.code ? regionByCode[s.code] : s;
+  flyTo(target.lat, target.lng, s.dist ?? 2.0);
+  tourText.textContent = s.text;
+  tourProgress.textContent = `${tour.i + 1} / ${tour.def.stops.length}`;
+  tour.timer = setTimeout(tourNext, s.ms ?? 8000);
+}
+function tourNext() {
+  tour.i++;
+  if (tour.i >= tour.def.stops.length) { exitTour(); return; }
+  tourStop();
+}
+function startTour(def) {
+  if (tour) exitTour(false);
+  panel.hidden = true;
+  setRegionURL(null);
+  setSim(def.sim || 'off');
+  tour = { def, i: 0, timer: null, paused: false };
+  tourTitle.textContent = def.title;
+  tourPauseBtn.textContent = '⏸';
+  tourHud.hidden = false;
+  tourStop();
+}
+function pauseTour() {
+  if (!tour || tour.paused) return;
+  clearTimeout(tour.timer);
+  tour.paused = true;
+  tourPauseBtn.textContent = '▶';
+}
+function resumeTour() {
+  if (!tour || !tour.paused) return;
+  tour.paused = false;
+  tourPauseBtn.textContent = '⏸';
+  tour.timer = setTimeout(tourNext, 4000);
+}
+function exitTour(goHome = true) {
+  if (!tour) return;
+  clearTimeout(tour.timer);
+  tour = null;
+  flyAnim = null;
+  tourHud.hidden = true;
+  setSim('off');
+  // whether the tour finished naturally or was exited manually, return to the
+  // initial view and resume idle auto-rotation (skipped when switching tours)
+  if (goHome) flyHome();
+}
+function pauseTourOnInteract() { if (tour && !tour.paused) pauseTour(); }
+tourPauseBtn.addEventListener('click', () => (tour?.paused ? resumeTour() : pauseTour()));
+document.getElementById('tour-exit').addEventListener('click', () => exitTour(true));
+{
+  const toursDiv = document.getElementById('tours');
+  toursDiv.innerHTML = TOURS.map((t) => `<button class="tour-btn" data-tour="${t.id}">${t.title}</button>`).join('');
+  toursDiv.addEventListener('click', (e) => {
+    const b = e.target.closest('.tour-btn');
+    if (b) startTour(TOURS.find((t) => t.id === b.dataset.tour));
+  });
+}
 
 // ---------- stats ----------
 document.getElementById('stats').textContent =
@@ -595,9 +785,16 @@ document.getElementById('theme-toggle').addEventListener('click', () => {
   applyTheme(themeMode === 'dark' ? 'light' : 'dark');
 });
 
+// deep link: open ?region=<code> on load
+{
+  const code = new URLSearchParams(location.search).get('region');
+  if (code && regionByCode[code]) selectRegion(code, { fly: true });
+}
+
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  stepFly();
   controls.update();
   if (backboneGroup.visible) backbonePulses.update(dt, backboneCurves);
   if (activeSim) simPulses.update(dt, activeSim.curves);

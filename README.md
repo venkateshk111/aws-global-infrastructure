@@ -70,7 +70,16 @@ It is intended to complement the official AWS documentation and provide an easie
 
 ## 🗂️ Version History
 
-### v1.1 — Learning & Usability Enhancements
+### v1.3 — Navigation, Search & Guided Learning
+* Added shareable deep links — selecting a Region updates the URL (`?region=<code>`), so sharing or reloading a link opens directly to that Region
+* Added a "Jump to region…" search box — find any Region by name, code, city, or country and fly straight to it
+* Added Guided Tours — narrated, auto-piloted walkthroughs with pause/resume/exit controls:
+  * **Your First Tour: What Am I Looking At?** — a beginner-friendly introduction to Regions, AZs, Edge Locations, and the Backbone Network
+  * **How CloudFront Delivers Content Globally**
+  * **Why Transit Gateway Beats VPC Peering at Scale**
+  * **S3 Cross-Region Replication in Action**
+
+### v1.2 — Learning & Usability Enhancements
 * Added AZ-count badges on each Region marker on the globe, tied to the Availability Zones layer toggle
 * Added a "Nearest Edge Locations" section to the Region side panel, computed by geographic distance
 * Added inline ⓘ info icons with plain-language definitions for every panel section, including Regions
